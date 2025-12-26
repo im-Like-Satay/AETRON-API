@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETRON COMMAND CENTER</title>
+    <style>
+        /* DESIGN SYSTEM: CYBERPUNK */
+        :root {
+            --bg-color: #050505;
+            --panel-color: #0a0a0a;
+            --text-main: #00ffcc; /* Cyan */
+            --text-alert: #ff0055; /* Red Neon */
+            --text-gold: #ffd700; /* Gold */
+            --border: 1px solid #1a1a1a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1, h2, h3 { margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--text-main);
+            padding-bottom: 10px;
+        }
+        .status-badge {
+            background: var(--text-main);
+            color: black;
+            padding: 2px 8px;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        /* GRID LAYOUT */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 Kolom */
+            grid-template-rows: auto 1fr;
+            gap: 15px;
+            flex-grow: 1;
+        }
+
+        /* PANELS */
+        .panel {
+            background: var(--panel-color);
+            border: var(--border);
+            padding: 15px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.1);
+        }
+        .panel-title {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        /* MODULE 1: CAMERA (CCTV) */
+        .camera-feed {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(100%) hue-rotate(130deg) saturate(200%); /* Efek Night Vision */
+        }
+        .hud-overlay {
+            position: absolute;
+            top: 10px; left: 10px;
+            color: var(--text-alert);
+            font-size: 0.8em;
+            animation: blink 1s infinite;
+        }
+
+        /* MODULE 2: STATS */
+        .stat-box { margin-bottom: 10px; }
+        .stat-value { font-size: 1.5em; font-weight: bold; }
+        .energy { color: var(--text-main); }
+        .money { color: var(--text-gold); }
+
+        /* MODULE 3: CHAT TERMINAL */
+        .terminal-window {
+            grid-column: span 2; /* Full width bawah */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--text-main);
+        }
+        .chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 0.9em;
+            max-height: 300px;
+        }
+        .msg { margin-bottom: 5px; }
+        .msg.bot { color: var(--text-main); }
+        .msg.user { color: #fff; text-align: right; }
+        
+        .input-area {
+            display: flex;
+            border-top: 1px solid var(--text-main);
+        }
+        input {
+            flex-grow: 1;
+            background: black;
+            border: none;
+            color: white;
+            padding: 10px;
+            font-family: inherit;
+            outline: none;
+        }
+        button {
+            background: var(--text-main);
+            border: none;
+            padding: 0 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* ANIMATIONS */
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* RESPONSIVE HP */
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: 1fr; }
+            .terminal-window { grid-column: span 1; }
+        }
+
+        /* SCROLL UNTUK HP */
+        @media (max-width: 780px) {
+            body { overflow-y: scroll; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>AETRON <span style="font-size:0.5em">V1.0</span></h1>
+        <div class="status-badge">SYSTEM ONLINE</div>
+    </div>
+
+    <div class="grid-container">
+        <div class="panel">
+            <span class="panel-title">VISUAL FEED [CAM-01]</span>
+            <div class="camera-feed">
+                <video id="videoElement" autoplay></video>
+                <div class="hud-overlay">● REC</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <span class="panel-title">SYSTEM STATUS</span>
+            <div class="stat-box">
+                <div>ENERGY GRID</div>
+                <div class="stat-value energy" id="energyVal">LOADING...</div>
+            </div>
+            <div class="stat-box">
+                <div>TREASURY (Z)</div>
+                <div class="stat-value money" id="moneyVal">LOADING...</div>
+            </div>
+        </div>
+
+        <div class="panel terminal-window">
+            <span class="panel-title">CORTEX INTERFACE</span>
+            <div class="chat-history" id="chatBox">
+                <div class="msg bot">[SYSTEM] Aetron Core Initialized...</div>
+                <div class="msg bot">[SYSTEM] Waiting for command.</div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="Enter command..." onkeypress="handleEnter(event)">
+                <button onclick="sendMessage()">SEND</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI API (GANTI URL INI DENGAN PUNYA PNYU) ---
+        const API_BASE = "https://aetron-api.vercel.app/api/v1"; 
+
+        // 1. AKTIFKAN KAMERA
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('videoElement').srcObject = stream;
+            } catch (e) {
+                console.log("Camera Access Denied");
+            }
+        }
+
+        // 2. FITUR CHAT
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const chatBox = document.getElementById('chatBox');
+            const text = input.value;
+            
+            if(!text) return;
+
+            // Tampilkan Chat Kita
+            chatBox.innerHTML += `<div class="msg user">> ${text}</div>`;
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Kirim ke Otak Pnyu
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ input: text }) // Sesuaikan key JSON Pnyu
+                });
+                
+                // Cek respon
+                // (Sesuaikan dengan format JSON Pnyu. Misal dia balikin {message: "..."} atau text biasa)
+                const result = await response.text(); 
+                
+                // Tampilkan Balasan AI
+                chatBox.innerHTML += `<div class="msg bot">[AI]: ${result}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+            } catch (e) {
+                chatBox.innerHTML += `<div class="msg bot" style="color:red">[ERROR]: Connection Lost</div>`;
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === "Enter") sendMessage();
+        }
+
+        // Jalankan saat start
+        startCamera();
+        
+        // Auto refresh data tiap 10 detik
+        setInterval(10000);
+
+    </script>
+</body>
+</html>
